@@ -1,9 +1,6 @@
 import os
 import streamlit as st
 import requests
-import shutil
-import chromadb
-from chromadb.config import Settings
 from bs4 import BeautifulSoup
 from langchain_groq import ChatGroq
 from langchain.chains import RetrievalQAWithSourcesChain
@@ -14,55 +11,6 @@ from langchain.schema import Document
 
 from dotenv import load_dotenv
 load_dotenv()
-
-def initialize_chroma():
-    # Clear existing DB if it exists
-    if os.path.exists(persist_directory):
-        shutil.rmtree(persist_directory)
-    
-    # Create directory if it doesn't exist
-    os.makedirs(persist_directory, exist_ok=True)
-    
-    # Initialize client with explicit settings
-    client = chromadb.Client(Settings(
-        chroma_db_impl="duckdb+parquet",
-        persist_directory=persist_directory,
-        anonymized_telemetry=False
-    ))
-    
-    # Create or get collection
-    try:
-        client.create_collection(name="default_tenant")
-    except ValueError:  # Collection already exists
-        pass
-        
-    embeddings = HuggingFaceEmbeddings(
-        model_name="sentence-transformers/all-MiniLM-L6-v2"
-    )
-    return embeddings
-
-def create_or_get_vectorstore(embeddings, documents=None):
-    settings = Settings(
-        chroma_db_impl="duckdb+parquet",
-        persist_directory=persist_directory,
-        anonymized_telemetry=False
-    )
-    
-    if documents:
-        vectorstore = Chroma.from_documents(
-            documents=documents,
-            embedding=embeddings,
-            persist_directory=persist_directory,
-            client_settings=settings
-        )
-        vectorstore.persist()
-    else:
-        vectorstore = Chroma(
-            persist_directory=persist_directory,
-            embedding_function=embeddings,
-            client_settings=settings
-        )
-    return vectorstore
 
 def load_url(url):
     try:
@@ -125,8 +73,6 @@ persist_directory = "db"
 main_placeholder = st.empty()
 llm = ChatGroq(temperature=0.9, max_tokens=500, model_name="mixtral-8x7b-32768")
 
-embeddings = initialize_chroma()
-
 if process_url_clicked and urls:
     try:
         main_placeholder.text("STATUS: Data is loading...")
@@ -154,8 +100,17 @@ if process_url_clicked and urls:
         main_placeholder.text("STATUS: Text splitting...")
         docs = text_splitter.split_documents(documents)
         
+        embeddings = HuggingFaceEmbeddings(
+            model_name="sentence-transformers/all-MiniLM-L6-v2"
+        )
+        
         main_placeholder.text("STATUS: Vector embedding...")
-        vectorstore = create_or_get_vectorstore(embeddings, docs)
+        vectorstore = Chroma.from_documents(
+            documents=docs,
+            embedding=embeddings,
+            persist_directory=persist_directory
+        )
+        vectorstore.persist()
         main_placeholder.text("Processing complete!")
         
         st.success(f"Successfully processed {len(documents)} URLs")
@@ -167,7 +122,13 @@ if process_url_clicked and urls:
 query = st.text_input("Question: ")
 if query and os.path.exists(persist_directory):
     try:
-        vectorstore = create_or_get_vectorstore(embeddings)
+        embeddings = HuggingFaceEmbeddings(
+            model_name="sentence-transformers/all-MiniLM-L6-v2"
+        )
+        vectorstore = Chroma(
+            persist_directory=persist_directory,
+            embedding_function=embeddings
+        )
         chain = RetrievalQAWithSourcesChain.from_llm(llm=llm, retriever=vectorstore.as_retriever())
         result = chain({"question": query}, return_only_outputs=True)
         st.header("Answer:")
