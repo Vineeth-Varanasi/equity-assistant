@@ -7,3 +7,4 @@ langchain-community
 chromadb==0.4.22
 sentence-transformers
 python-dotenv
+numpy<2.0.0
