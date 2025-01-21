@@ -12,6 +12,10 @@ from langchain.schema import Document
 from dotenv import load_dotenv
 load_dotenv()
 
+__import__('pysqlite3')
+import sys
+sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+
 def load_url(url):
     try:
         # Headers to mimic a browser request
