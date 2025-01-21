@@ -8,6 +8,7 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.embeddings import HuggingFaceEmbeddings
 from langchain.vectorstores import Chroma
 from langchain.schema import Document
+import shutil
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -107,6 +108,9 @@ if process_url_clicked and urls:
         embeddings = HuggingFaceEmbeddings(
             model_name="sentence-transformers/all-MiniLM-L6-v2"
         )
+
+        if os.path.exists(persist_directory):
+            shutil.rmtree(persist_directory)
         
         main_placeholder.text("STATUS: Vector embedding...")
         vectorstore = Chroma.from_documents(
