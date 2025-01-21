@@ -14,7 +14,7 @@ load_dotenv()
 
 def load_url(url):
     try:
-        # Headers to mimic a browser request
+        
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
@@ -26,30 +26,30 @@ def load_url(url):
         
         soup = BeautifulSoup(response.text, 'html.parser')
         
-        # Specific handling for MoneyControl articles
+        
         if 'moneycontrol.com' in url:
-            # Get the article content
+            
             article_div = soup.find('div', {'class': 'content_wrapper'})
             if article_div:
-                # Remove unwanted elements
+                
                 for div in article_div.find_all('div', {'class': ['attribution_block', 'related-news', 'ad', 'advertisement']}):
                     div.decompose()
                     
-                # Get the article text
+                
                 text = article_div.get_text(separator=' ', strip=True)
             else:
                 st.warning("Could not find article content. Falling back to general text extraction.")
                 text = soup.get_text()
         else:
-            # For non-MoneyControl URLs, get all text
+            
             text = soup.get_text()
             
-        # Clean up the text
+        
         lines = (line.strip() for line in text.splitlines())
         chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
         text = ' '.join(chunk for chunk in chunks if chunk)
         
-        # Print first 500 characters to verify content
+        
         st.write("Preview of extracted content:")
         st.write(text[:500] + "...")
         
@@ -64,7 +64,7 @@ st.sidebar.title("Finance article URLs")
 urls = []
 for i in range(3):
     url = st.sidebar.text_input(f"URL {i+1}")
-    if url:  # Only add non-empty URLs
+    if url:  
         urls.append(url)
 
 process_url_clicked = st.sidebar.button("Process data")
