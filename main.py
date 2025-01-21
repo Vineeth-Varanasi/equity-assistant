@@ -31,7 +31,7 @@ def load_url(url):
             
             article_div = soup.find('div', {'class': 'content_wrapper'})
             if article_div:
-                
+
                 for div in article_div.find_all('div', {'class': ['attribution_block', 'related-news', 'ad', 'advertisement']}):
                     div.decompose()
                     
